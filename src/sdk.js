@@ -40,6 +40,7 @@
   
     function createPageViewEvent() {
       return {
+        Id:"1545644132fdafdafa",
         EventName: "page_view",
         Timestamp: new Date().toISOString(),
         Properties: gatherPageViewData(),

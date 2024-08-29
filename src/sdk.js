@@ -23,27 +23,43 @@
       });
   };
 
-  function gatherPageViewData() {
-    return {
-      url: window.location.href,
-      width: window.screen.width,
-      height: window.screen.height,
-    };
+  function detectDeviceType() {
+    return /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
+      ? "Mobile"
+      : "Desktop";
   }
 
-  // function calculateSessionDuration() {
-  //   return 300; // Placeholder value
-  // }
-
-  // function determineIfNewUser() {
-  //   return true; // Placeholder value
-  // }
+  // Generate a unique session ID
+  function generateSessionId() {
+    return "xxxx-xxxx-4xxx-yxxx-xxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
 
   function createPageViewEvent() {
     return {
-      EventName: "page_view",
-      Timestamp: new Date().toISOString(),
-      Properties: gatherPageViewData(),
+      eventName: "page_view",
+      timestamp: new Date().toISOString(),
+      properties: {
+        pageUrl: window.location.href,
+        pageTitle: document.title,
+        referrerUrl: document.referrer || "Direct",
+        sessionId: generateSessionId(),
+        deviceType: detectDeviceType(),
+        // userId: this.userId || 'anonymous',
+        BrowserInfo: getBrowserInfo(),
+      },
+    };
+  }
+
+  function getBrowserInfo() {
+    return {
+      browserName: navigator.userAgent,
+      browserVersion: navigator.appVersion,
+      osName: navigator.platform,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      language: navigator.language,
     };
   }
 

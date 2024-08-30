@@ -1,13 +1,18 @@
 (function (window, document) {
-  var AnalyticsSDK = {};
-
   var defaultBaseURL =
     "https://5106-2401-4900-1ce2-a051-7d90-76e-cde0-a6c6.ngrok-free.app";
 
   function AnalyticsClient(baseURL) {
     this.baseURL = baseURL || defaultBaseURL;
+    this.sessionId = generateSessionId();
+    this.scrollDepth = 0;
+    this.startTime = Date.now();
+
+    // Initialize page tracking
+    this.init();
   }
 
+  // Send any event to the backend
   AnalyticsClient.prototype.sendEvent = function (event) {
     return fetch(this.baseURL + "/api/Event", {
       method: "POST",
@@ -23,6 +28,59 @@
       });
   };
 
+  // Initialize page tracking
+  AnalyticsClient.prototype.init = function () {
+    var self = this;
+
+    // Track the PageView event on load
+    var pageViewEvent = createPageViewEvent(self.sessionId);
+    self
+      .sendEvent(pageViewEvent)
+      .then((response) => {
+        console.log("Page view event sent successfully:", response);
+      })
+      .catch((error) => {
+        console.error("Failed to send page view event:", error);
+      });
+
+    // Track scroll depth
+    window.addEventListener("scroll", function () {
+      self.calculateScrollDepth();
+    });
+
+    // Track the PageExit event on page unload
+    window.addEventListener("beforeunload", function () {
+      self.trackPageExit();
+    });
+  };
+
+  // Calculate scroll depth
+  AnalyticsClient.prototype.calculateScrollDepth = function () {
+    var scrollTop = window.scrollY;
+    var docHeight = document.body.scrollHeight - window.innerHeight;
+    var scrollPercent = (scrollTop / docHeight) * 100;
+    this.scrollDepth = Math.max(this.scrollDepth, Math.floor(scrollPercent));
+  };
+
+  // Track the PageExit event
+  AnalyticsClient.prototype.trackPageExit = function () {
+    var timeOnPage = Math.floor((Date.now() - this.startTime) / 1000); // Time in seconds
+
+    var pageExitEvent = createPageExitEvent(
+      this.sessionId,
+      timeOnPage,
+      this.scrollDepth
+    );
+    this.sendEvent(pageExitEvent)
+      .then((response) => {
+        console.log("Page exit event sent successfully:", response);
+      })
+      .catch((error) => {
+        console.error("Failed to send page exit event:", error);
+      });
+  };
+
+  // Detect device type
   function detectDeviceType() {
     return /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
       ? "Mobile"
@@ -37,7 +95,26 @@
     });
   }
 
-  function createPageViewEvent() {
+  // Get operating system name
+  function getOSName() {
+    const platform = navigator.platform.toLowerCase();
+    if (platform.includes("win")) return "Windows";
+    if (platform.includes("mac")) return "macOS";
+    if (platform.includes("linux")) return "Linux";
+    return "Unknown";
+  }
+
+  // Get browser version
+  function getBrowserVersion() {
+    const userAgent = navigator.userAgent;
+    const matches =
+      userAgent.match(
+        /(firefox|chrome|safari|msie|trident(?=\/))\/?\s*(\d+)/i
+      ) || [];
+    return matches[2] || "Unknown";
+  }
+
+  function createPageViewEvent(sessionId) {
     return {
       eventName: "page_view",
       timestamp: new Date().toISOString(),
@@ -45,7 +122,25 @@
         pageUrl: window.location.href,
         pageTitle: document.title,
         referrerUrl: document.referrer || "Direct",
-        sessionId: generateSessionId(),
+        sessionId: sessionId,
+        deviceType: detectDeviceType(),
+        // userId: this.userId || 'anonymous',
+        BrowserInfo: getBrowserInfo(),
+      },
+    };
+  }
+
+  function createPageExitEvent(sessionId, timeOnPage, scrollDepth) {
+    return {
+      eventName: "page_exit",
+      timestamp: new Date().toISOString(),
+      properties: {
+        pageUrl: window.location.href,
+        pageTitle: document.title,
+        referrerUrl: document.referrer || "Direct",
+        sessionId: sessionId,
+        timeOnPage: timeOnPage,
+        scrollDepth: scrollDepth,
         deviceType: detectDeviceType(),
         // userId: this.userId || 'anonymous',
         BrowserInfo: getBrowserInfo(),
@@ -56,26 +151,13 @@
   function getBrowserInfo() {
     return {
       browserName: navigator.userAgent,
-      browserVersion: navigator.appVersion,
-      osName: navigator.platform,
+      browserVersion: getBrowserVersion(),
+      osName: getOSName(),
       screenResolution: `${window.screen.width}x${window.screen.height}`,
       language: navigator.language,
     };
   }
 
-  function initAnalytics() {
-    var client = new AnalyticsClient();
-    var event = createPageViewEvent();
-    client
-      .sendEvent(event)
-      .then((response) => {
-        console.log("Page view event sent successfully:", response);
-      })
-      .catch((error) => {
-        console.error("Failed to send page view event:", error);
-      });
-  }
-
-  // Automatically initialize the analytics SDK
-  initAnalytics();
+  // Automatically initialize the analytics client
+  new AnalyticsClient();
 })(window, document);

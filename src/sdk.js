@@ -20,12 +20,7 @@
         "Content-Type": "application/json",
       },
       body: JSON.stringify(event),
-    })
-      .then((response) => response.json())
-      .catch((error) => {
-        console.error("Error sending event:", error.message);
-        throw error;
-      });
+    });
   };
 
   // Initialize page tracking
@@ -71,13 +66,7 @@
       timeOnPage,
       this.scrollDepth
     );
-    this.sendEvent(pageExitEvent)
-      .then((response) => {
-        console.log("Page exit event sent successfully:", response);
-      })
-      .catch((error) => {
-        console.error("Failed to send page exit event:", error);
-      });
+    this.sendEvent(pageExitEvent);
   };
 
   // Detect device type

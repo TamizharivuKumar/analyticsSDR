@@ -1,6 +1,6 @@
 (function (window, document) {
   var defaultBaseURL =
-    "https://5106-2401-4900-1ce2-a051-7d90-76e-cde0-a6c6.ngrok-free.app";
+    "https://c639-2401-4900-1ce2-a051-616b-b07d-7cf4-d15f.ngrok-free.app/";
 
   function AnalyticsClient(baseURL) {
     this.baseURL = baseURL || defaultBaseURL;
